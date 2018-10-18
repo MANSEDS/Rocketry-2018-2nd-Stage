@@ -3,7 +3,7 @@
 
 import time
 import smbus
-
+import math
 
 ### Read corrected temperature and pressure
 # Get I2C bus
@@ -97,7 +97,7 @@ def ReadTempAndPressure():
 
 
 #setting timeout for 30 minutes
-timeout = time.time() + 60*30
+timeout = time.time() + 60* 15
 
 # Get ground pressure
 ground_pressure_readings = []
@@ -105,8 +105,26 @@ for i in range(0,10):
     ground_pressure_readings.append(ReadTempAndPressure()[1])
 ground_pressure = sum(ground_pressure_readings) / len(ground_pressure_readings)
 
-readings = []
+def record_pressure():
+    readings = []
+    while True:
+        temperature, pressure = ReadTempAndPressure()
+        # Altitude = (R/g)*T*ln(Po/P)
+        altitude = (287.058/9.81)*temperature*math.log(pressure/ground_pressure)
+        temp_array = [temperature, pressure, altitude]
+        readings.append(temp_array)
+        time.sleep(0.05)
+        # Writes in the values every 1 second (10 readings)
+        if len(readings) == 10:
+            # Writes the readings to the file
+            with open("barometer_data.dat", "a") as file:
+                for i in readings:
+                    file.write("T:"+str(i[0])+"C; P:"+str(i[1])+"hPa; A:"+str(i[2])+"m" + "\n")
+            readings = []  # Resets the 'readings' array
+        if time.time() > timeout:
+            break
 
+'''
 while True:
 
     temperature, pressure = ReadTempAndPressure()
@@ -116,15 +134,15 @@ while True:
 
     temp_array = [temperature, pressure, altitude]
 
-    readings.append(Temp_array)
-    sleep(0.05)
+    readings.append(temp_array)
+    time.sleep(0.05)
 
     # Writes in the values every 1 second (10 readings)
     if len(readings) == 10:
 
         # Writes the readings to the file
         with open("barometer_data.dat", "a") as file:
-            for i in Readings:
+            for i in readings:
                 file.write("T:"+i[0]+"C; P:"+i[1]+"hPa; A:"+i[2]+"m" + "\n")
 
 
@@ -140,3 +158,4 @@ while True:
 
     if time.time() > timeout:
         break
+'''
